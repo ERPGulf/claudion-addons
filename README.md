@@ -1,33 +1,66 @@
-### claudion-addons
+# # claudion_addons
 
-General addons for Claudion.com clients
+`claudion_addons` is a specialized Frappe application designed to enhance the user experience for **Claudion.com** cloud server users. It provides advanced reporting, deeper customization, and localized features that go beyond the standard ERPNext offerings.
 
-### Installation
+## ## 🚀 Key Features
 
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+This app bundles high-demand reports and functional improvements requested by Claudion's enterprise clients:
+
+* **Financial Statements:** * Enhanced **Customer Statements** with PDC (Post-Dated Check) tracking.
+* **Supplier Statements** with detailed aging analysis.
+
+
+* **Inventory Management:** * Advanced **Stock Statements** and valuation reports.
+* Warehouse-wise movements and stock-in-hand logs.
+
+
+* **HR & Employee Logs:**
+* Comprehensive **Check-in/Check-out Logs**.
+* **Employee Expense** summaries and claim tracking.
+
+
+* **Custom Print Formats:**
+* Professional, ready-to-use Jinja templates for invoices and statements.
+
+
+
+---
+
+## ## 🛠 Installation
+
+To install `claudion_addons` on your Frappe bench, run the following commands:
 
 ```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app claudion_addons
+bench get-app https://github.com/erpgulf/claudion_addons.git
+bench --site [your-site-name] install-app claudion_addons
+bench --site [your-site-name] migrate
+
 ```
 
-### Contributing
+> **Note:** Ensure your bench is running **Frappe/ERPNext v15+** (or v16 for the latest features) for full compatibility.
 
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+---
 
-```bash
-cd apps/claudion_addons
-pre-commit install
-```
+## ## 📖 Documentation
 
-Pre-commit is configured to use the following tools for checking and formatting your code:
+Detailed guides on how to configure the reports and use the custom Print Formats can be found at:
+👉 **[https://docs.claudion.com/](https://docs.claudion.com/)**
 
-- ruff
-- eslint
-- prettier
-- pyupgrade
+---
 
-### License
+## ## ✉️ Support1G
 
-mit
+If you encounter any issues or require custom report development, please reach out to our support team:
+
+* **Email:** [support@erpgulf.com](mailto:support@erpgulf.com)
+* **Website:** [ERPGulf.com](https://erpgulf.com)
+* **Cloud Provider:** [Claudion.com](https://claudion.com)
+
+---
+
+## ## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+
+---
+
