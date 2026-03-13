@@ -323,7 +323,7 @@ def get_customer_map():
 
 # --------------------------------------------------
 # SALES INVOICE DESCRIPTION MAP
-# --------------------------------------------------
+# ---------------------------------------------- ----
 def get_sales_invoice_description_map(data):
 	sales_invoice_numbers = list(
 		{
