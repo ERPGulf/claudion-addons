@@ -1,49 +1,51 @@
 <!-- Modified on 25-11-2024 -->
 
-<style type="text/css">
-    body,
-    html {
-        margin-top: 10;
-        padding: 0;
-        width: 100%;
-        height: auto;
-        font-family: Arial, sans-serif;
+<style>
+
+body,
+html {
+    margin-top: 10;
+    padding: 0;
+    width: 100%;
+    height: auto;
+    font-family: Arial, sans-serif;
+}
+
+.title-letter-spacing {
+    letter-spacing: .2rem;
+}
+
+@media print {
+
+    @page {
+        size: A4;
+        margin-top: 10mm;
     }
 
-    .title-letter-spacing {
-        letter-spacing: .2rem;
+    .page-break {
+        page-break-before: always;
+        margin-top: 10mm;
     }
 
-    @media print {
-
-        @page {
-            size: A4;
-            margin-top: 10mm;
-        }
-
-        .page-break {
-            page-break-before: always;
-            margin-top: 10mm;
-        }
-
-        thead {
-            display: table-header-group;
-        }
-
-        tfoot {
-            display: table-footer-group;
-        }
-
-        th,
-        td {
-            padding: 1px;
-            border: 1px solid black;
-        }
-
-        .no-print {
-            display: none !important;
-        }
+    thead {
+        display: table-header-group;
     }
+
+    tfoot {
+        display: table-footer-group;
+    }
+
+    th,
+    td {
+        padding: 1px;
+        border: 1px solid black;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}
+
 </style>
 
 <br>
@@ -51,107 +53,117 @@
 <div style="font-family:Arial">
 
 {% 
-    var show_po_column = false;
-    if(!filters.party){
-        show_po_column = true;
-    } else {
-        for(var x=0; x<data.length; x++){
-            if(data[x].po_no || data[x].remarks){
-                show_po_column = true;
-                break;
-            }
+var show_po_column = false;
+
+if(!filters.party){
+    show_po_column = true;
+}else{
+    for(var x=0; x<data.length; x++){
+        if(data[x].po_no || data[x].remarks){
+            show_po_column = true;
+            break;
         }
     }
+}
 %}
 
 <div>
-    <div style="text-align:center; font-size:15px; line-height:1.4; letter-spacing:0;">
-        <div style="font-weight:bold; font-size:18px; margin-bottom:4px;">
-            {%= __("STATEMENT OF ACCOUNTS") %}
-        </div>
 
-        {% if (filters.party_name) { %}
-        {%= filters.party_name %}<br>
+<div style="text-align:center; font-size:15px; line-height:1.4; letter-spacing:0;">
 
-        {% if (filters.tax_id) { %}
-        <span style="font-weight:bold;">{%= __("Tax ID: ") %}{%= filters.tax_id %}</span><br>
-        {% } %}
+<div style="font-weight:bold; font-size:18px; margin-bottom:4px;">
+{%= __("STATEMENT OF ACCOUNTS") %}
+</div>
 
-        {% } else if (filters.party && filters.party.length) { %}
+{% if (filters.party_name) { %}
 
-        {%= filters.party %}<br>
+{%= filters.party_name %}<br>
 
-        {% if (filters.tax_id) { %}
-        <span style="font-weight:bold;">{%= __("Tax ID: ") %}{%= filters.tax_id %}</span><br>
-        {% } %}
+{% if (filters.tax_id) { %}
+<span style="font-weight:bold;">{%= __("Tax ID: ") %}{%= filters.tax_id %}</span><br>
+{% } %}
 
-        {% } else { %}
+{% } else if (filters.party && filters.party.length) { %}
 
-        {%= __("All Customers ") %}<br>
+{%= filters.party %}<br>
 
-        {% } %}
+{% if (filters.tax_id) { %}
+<span style="font-weight:bold;">{%= __("Tax ID: ") %}{%= filters.tax_id %}</span><br>
+{% } %}
 
-    </div>
+{% } else { %}
 
-    <div style="text-align:center; font-size:13px;">
-        <b>
-            {%= __("{0} to {1}", [
-            frappe.datetime.str_to_user(filters.from_date),
-            frappe.datetime.str_to_user(filters.to_date)
-            ]) %}
-            <br><br>
-        </b>
-    </div>
+{%= __("All Customers ") %}<br>
+
+{% } %}
 
 </div>
 
-<table style="width:100%; font-size: 11px">
+<div style="text-align:center; font-size:13px;">
+<b>
+
+{%= __("{0} to {1}", [
+frappe.datetime.str_to_user(filters.from_date),
+frappe.datetime.str_to_user(filters.to_date)
+]) %}
+
+<br><br>
+
+</b>
+</div>
+
+</div>
+
+
+<table style="width:100%; font-size:11px">
 
 <thead>
-<tr class="title-letter-spacing" style="text-align: center; font-weight:bold">
 
-<td style="border: 1.5px solid black; width: 7em">
+<tr class="title-letter-spacing" style="text-align:center; font-weight:bold">
+
+<td style="border:1.5px solid black; width:7em">
 {%= __("Date").toLocaleUpperCase() %}
 </td>
 
-<td style="border: 1.5px solid black">
+<td style="border:1.5px solid black">
 {%= __("Particulars").toLocaleUpperCase() %}
 </td>
 
 {% if(show_po_column) { %}
-<td style="border: 1.5px solid black">
+<td style="border:1.5px solid black">
 {%= __("Remarks").toLocaleUpperCase() %}
 </td>
 {% } %}
 
-<td style="border: 1.5px solid black; width: 9em">
+<td style="border:1.5px solid black; width:9em">
 {%= __("Debit").toLocaleUpperCase() %}
 </td>
 
-<td style="border: 1.5px solid black; width: 9em">
+<td style="border:1.5px solid black; width:9em">
 {%= __("Credit").toLocaleUpperCase() %}
 </td>
 
-<td style="border: 1.5px solid black; width: 10.2em">
+<td style="border:1.5px solid black; width:10.2em">
 {%= __("Balance").toLocaleUpperCase() %}
 </td>
 
 </tr>
+
 </thead>
 
 <tbody>
 
 {% for(var i=0, l=data.length; i<l; i++) { %}
 
-<tr style="border-bottom: 1px solid black">
+<tr style="border-bottom:1px solid black">
 
 {% if(data[i].posting_date) { %}
 
-<td style="text-align: center; border: 1px dotted black">
+<td style="text-align:center; border:1px dotted black">
 {%= frappe.datetime.str_to_user(data[i].posting_date) %}
 </td>
 
-<td style="border-right: 1px dotted black">
+<td style="border-right:1px dotted black">
 
 {%= data[i].voucher_type %} {%= data[i].voucher_no %}
 
@@ -167,11 +179,13 @@
 
 </td>
 
+
 {% if(show_po_column) { %}
 
-<td style="border-right: 1px dotted black; font-size: 10px">
+<td style="border-right:1px dotted black; font-size:10px">
 
 <!-- Sales Invoice PO -->
+
 {% if(data[i].po_no) { %}
 
 {%= __("Remarks") %}:
@@ -182,7 +196,9 @@
 
 {% } %}
 
+
 <!-- Payment Entry reference -->
+
 {% if(data[i].voucher_type == "Payment Entry") { %}
 
 {%= __("Remarks") %}:
@@ -193,6 +209,7 @@
 
 {% } %}
 
+
 {% if(data[i].remarks) { %}
 <br>
 {%= data[i].remarks %}
@@ -202,25 +219,33 @@
 
 {% } %}
 
-<td style="text-align: right; border-right: 1px dotted black">
 
-{% if data[i].debit != 0 %}
+<!-- DEBIT COLUMN -->
+
+<td style="text-align:right; border-right:1px dotted black">
+
+{% if(data[i].debit || data[i].debit == 0) { %}
 {%= format_currency(data[i].debit, filters.presentation_currency) %}
 {% } %}
 
 </td>
 
-<td style="text-align: right; border-right: 1px dotted black">
 
-{% if data[i].credit != 0 %}
+<!-- CREDIT COLUMN -->
+
+<td style="text-align:right; border-right:1px dotted black">
+
+{% if(data[i].credit || data[i].credit == 0) { %}
 {%= format_currency(data[i].credit, filters.presentation_currency) %}
 {% } %}
 
 </td>
 
+
 {% } else { %}
 
-<td style="text-align: center; border: 1px dotted black">
+
+<td style="text-align:center; border:1px dotted black">
 
 {% if(i == 0) { %}
 {%= frappe.datetime.str_to_user(filters.from_date) %}
@@ -228,7 +253,8 @@
 
 </td>
 
-<td style="text-align: left; border-right: 1px dotted black">
+
+<td style="text-align:left; border-right:1px dotted black">
 <b>
 
 {% if(i == l-2) { %}
@@ -238,44 +264,53 @@
 {% if(i == l-1) { %}
 {%= __("Closing [Opening + Total] ") %}
 {% } else { %}
-
 {%= frappe.format(data[i].account, {fieldtype: "Link"}) || "&nbsp;" %}
-
 {% } %}
+
 {% } %}
 
 </b>
 </td>
 
+
 {% if(show_po_column) { %}
-<td style="border-right: 1px dotted black"></td>
+<td style="border-right:1px dotted black"></td>
 {% } %}
 
-<td style="text-align: right; border-right: 1px dotted black">
 
-{% if(i != 0){ %}
-{% if(i != l-1){ %}
-{%= data[i].account && format_currency(data[i].debit, filters.presentation_currency) %}
-{% } %}
-{% } %}
+<!-- OPENING / TOTAL DEBIT -->
 
-</td>
+<td style="text-align:right; border-right:1px dotted black">
 
-<td style="text-align: right; border-right: 1px dotted black">
-
-{% if(i != 0){ %}
-{% if(i != l-1){ %}
-{%= data[i].account && format_currency(data[i].credit, filters.presentation_currency) %}
-{% } %}
+{% if(data[i].debit || data[i].debit == 0) { %}
+{%= format_currency(data[i].debit, filters.presentation_currency) %}
+{% } else { %}
+0
 {% } %}
 
 </td>
 
+
+<!-- OPENING / TOTAL CREDIT -->
+
+<td style="text-align:right; border-right:1px dotted black">
+
+{% if(data[i].credit || data[i].credit == 0) { %}
+{%= format_currency(data[i].credit, filters.presentation_currency) %}
+{% } else { %}
+0
 {% } %}
+
+</td>
+
+{% } %}
+
+
+<!-- BALANCE -->
 
 {% if(i == l-1) { %}
 
-<td style="text-align: right; font-weight:bold; border-right: 1px dotted black">
+<td style="text-align:right; font-weight:bold; border-right:1px dotted black">
 
 {%= format_currency(data[i].balance, filters.presentation_currency) %}
 
@@ -286,10 +321,12 @@
 
 {% } else { %}
 
-<td style="text-align: right; border-right: 1px dotted black">
+<td style="text-align:right; border-right:1px dotted black">
 
-{% if(i != l-2) { %}
+{% if(data[i].balance || data[i].balance == 0) { %}
 {%= format_currency(data[i].balance, filters.presentation_currency) %}
+{% } else { %}
+0
 {% } %}
 
 </td>
@@ -298,11 +335,12 @@
 
 </tr>
 
-{% endfor%}
+{% endfor %}
 
 </tbody>
 
 </table>
+
 
 <p class="text-right text-muted">
 
