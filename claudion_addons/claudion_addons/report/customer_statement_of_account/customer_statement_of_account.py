@@ -369,7 +369,7 @@ def get_sales_invoice_po_map(data):
 	return {inv.name: inv for inv in invoices}
 
 
-# --------------------------------------------------
+# ------------------------------------------------  --
 # PAYMENT ENTRY REFERENCE MAP
 # --------------------------------------------------
 def get_payment_entry_reference_map(data):
