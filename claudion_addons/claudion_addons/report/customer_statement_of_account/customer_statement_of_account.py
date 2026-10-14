@@ -1,6 +1,8 @@
 
 # import frappe
 # from frappe import _
+# from frappe.utils import formatdate, escape_html
+# from frappe.contacts.doctype.address.address import get_default_address
 # from erpnext.accounts.report.general_ledger import general_ledger
 
 # """
@@ -10,6 +12,8 @@
 #     - Customer Name column
 #     - Remarks shown only if checkbox enabled
 #     - Customer PO No and PO Date from Sales Invoice
+#     - Payment Entry reference_no and reference_date
+#     - Bilingual customer name / address / VAT (on first row) for the print header
 # """
 
 
@@ -61,23 +65,25 @@
 # 	# --------------------------------------------------
 # 	if not any(col.get("fieldname") == "party_name" for col in columns):
 # 		party_index = next(
-# 			i for i, c in enumerate(columns) if c.get("fieldname") == "party"
+# 			(i for i, c in enumerate(columns) if c.get("fieldname") == "party"), None
 # 		)
-# 		columns.insert(
-# 			party_index + 1,
-# 			{
-# 				"label": _("Customer Name"),
-# 				"fieldname": "party_name",
-# 				"fieldtype": "Data",
-# 				"width": 150,
-# 			},
-# 		)
+# 		if party_index is not None:
+# 			columns.insert(
+# 				party_index + 1,
+# 				{
+# 					"label": _("Customer Name"),
+# 					"fieldname": "party_name",
+# 					"fieldtype": "Data",
+# 					"width": 150,
+# 				},
+# 			)
 
 # 	# --------------------------------------------------
 # 	# PREPARE LOOKUP MAPS
 # 	# --------------------------------------------------
 # 	customer_map = get_customer_map()
 # 	po_map = get_sales_invoice_po_map(data)
+# 	payment_ref_map = get_payment_entry_reference_map(data)
 
 # 	# Get remarks length once
 # 	remarks_length = None
@@ -102,6 +108,13 @@
 # 				row["po_no"] = po.get("po_no")
 # 				row["po_date"] = po.get("po_date")
 
+# 		# Add Payment Entry Reference
+# 		if row.get("voucher_type") == "Payment Entry":
+# 			ref = payment_ref_map.get(row.get("voucher_no"))
+# 			if ref:
+# 				row["reference_no"] = ref.get("reference_no")
+# 				row["reference_date"] = formatdate(ref.get("reference_date"))
+
 # 		# Handle Remarks
 # 		if filters.get("show_remarks"):
 # 			if remarks_length and row.get("remarks"):
@@ -109,7 +122,128 @@
 # 		else:
 # 			row.pop("remarks", None)
 
+# 	# --------------------------------------------------
+# 	# CUSTOMER HEADER DETAILS FOR PRINT
+# 	# Attached to the first row; the print format reads them from there
+# 	# --------------------------------------------------
+# 	if data and filters.get("party") and len(filters.party) == 1:
+# 		details = get_customer_details(filters.party[0])
+# 		data[0].update(
+# 			{
+# 				"cust_name": details.get("customer_name", ""),
+# 				"cust_name_ar": details.get("customer_name_ar", ""),
+# 				"cust_tax_id": details.get("tax_id", ""),
+# 				"cust_address_en": details.get("address_en", ""),
+# 				"cust_address_ar": details.get("address_ar", ""),
+# 			}
+# 		)
+
 # 	return columns, data, None, get_report_summary(filters)
+
+
+# # --------------------------------------------------
+# # CUSTOMER DETAILS FOR PRINT HEADER
+# # --------------------------------------------------
+# def get_customer_details(customer):
+# 	if not customer:
+# 		return {}
+
+# 	cust = frappe.get_doc("Customer", customer)
+
+# 	customer_name = cust.customer_name or cust.name
+# 	customer_name_ar = (
+# 		cust.get("custom_customer_name_in_arabic")
+# 		or cust.get("zatca_customer_name_in_arabic")
+# 		or ""
+# 	)
+
+# 	address_name = cust.get("customer_primary_address") or get_default_address(
+# 		"Customer", cust.name
+# 	)
+# 	addr = frappe.get_doc("Address", address_name) if address_name else None
+
+# 	return {
+# 		"customer_name": customer_name,
+# 		"customer_name_ar": customer_name_ar,
+# 		"tax_id": cust.tax_id or "",
+# 		"address_en": get_address_en(addr),
+# 		"address_ar": get_address_ar(addr),
+# 	}
+
+
+# def _building_no(a):
+# 	return a.get("custom_building_number") or a.get("building_number") or ""
+
+
+# def get_address_en(a):
+# 	if not a:
+# 		return ""
+
+# 	building_no = _building_no(a)
+# 	lines = []
+
+# 	if a.address_line1:
+# 		lines.append(escape_html(a.address_line1))
+# 	if a.address_line2:
+# 		lines.append(escape_html(a.address_line2))
+
+# 	if building_no or a.city or a.pincode:
+# 		city_line = ""
+# 		if building_no:
+# 			city_line += f"Building No. {escape_html(building_no)}, "
+# 		city_line += escape_html(a.city or "")
+# 		if a.pincode:
+# 			city_line += f" {escape_html(a.pincode)}"
+# 		lines.append(city_line.strip())
+
+# 	if a.country:
+# 		lines.append(escape_html(a.country))
+
+# 	return "<br>".join(lines)
+
+
+# def get_address_ar(a):
+# 	"""Arabic fields fall back to English."""
+# 	if not a:
+# 		return ""
+
+# 	building_no = _building_no(a)
+# 	line1 = (
+# 		a.get("custom_address_line_1_in_arabic")
+# 		or a.get("address_line_1_in_arabic")
+# 		or a.address_line1
+# 		or ""
+# 	)
+# 	line2 = (
+# 		a.get("custom_address_line_2_in_arabic")
+# 		or a.get("address_line_2_in_arabic")
+# 		or a.address_line2
+# 		or ""
+# 	)
+# 	city = a.get("custom_city_in_arabic") or a.get("city_in_arabic") or a.city or ""
+# 	country = (
+# 		"المملكة العربية السعودية" if a.country == "Saudi Arabia" else (a.country or "")
+# 	)
+
+# 	lines = []
+# 	if line1:
+# 		lines.append(escape_html(line1))
+# 	if line2:
+# 		lines.append(escape_html(line2))
+
+# 	if building_no or city or a.pincode:
+# 		city_line = ""
+# 		if building_no:
+# 			city_line += f'رقم المبنى <span class="num">{escape_html(building_no)}</span>، '
+# 		city_line += escape_html(city)
+# 		if a.pincode:
+# 			city_line += f' <span class="num">{escape_html(a.pincode)}</span>'
+# 		lines.append(city_line.strip())
+
+# 	if country:
+# 		lines.append(escape_html(country))
+
+# 	return "<br>".join(lines)
 
 
 # # --------------------------------------------------
@@ -161,11 +295,8 @@
 # # SALES INVOICE PO MAP
 # # --------------------------------------------------
 # def get_sales_invoice_po_map(data):
-
 # 	vouchers = [
-# 		d.get("voucher_no")
-# 		for d in data
-# 		if d.get("voucher_type") == "Sales Invoice"
+# 		d.get("voucher_no") for d in data if d.get("voucher_type") == "Sales Invoice"
 # 	]
 
 # 	if not vouchers:
@@ -178,9 +309,30 @@
 # 	)
 
 # 	return {inv.name: inv for inv in invoices}
+
+
+# # --------------------------------------------------
+# # PAYMENT ENTRY REFERENCE MAP
+# # --------------------------------------------------
+# def get_payment_entry_reference_map(data):
+# 	vouchers = [
+# 		d.get("voucher_no") for d in data if d.get("voucher_type") == "Payment Entry"
+# 	]
+
+# 	if not vouchers:
+# 		return {}
+
+# 	payments = frappe.get_all(
+# 		"Payment Entry",
+# 		filters={"name": ["in", vouchers]},
+# 		fields=["name", "reference_no", "reference_date"],
+# 	)
+
+# 	return {p.name: p for p in payments}
 import frappe
 from frappe import _
-from frappe.utils import formatdate
+from frappe.utils import formatdate, escape_html
+from frappe.contacts.doctype.address.address import get_default_address
 from erpnext.accounts.report.general_ledger import general_ledger
 
 """
@@ -191,6 +343,8 @@ Adds:
     - Remarks shown only if checkbox enabled
     - Customer PO No and PO Date from Sales Invoice
     - Payment Entry reference_no and reference_date
+    - Bilingual customer name / address / VAT (on first row) for the print header
+      (address is optional - if missing, it is simply not shown)
 """
 
 
@@ -242,17 +396,18 @@ def execute(filters=None):
 	# --------------------------------------------------
 	if not any(col.get("fieldname") == "party_name" for col in columns):
 		party_index = next(
-			i for i, c in enumerate(columns) if c.get("fieldname") == "party"
+			(i for i, c in enumerate(columns) if c.get("fieldname") == "party"), None
 		)
-		columns.insert(
-			party_index + 1,
-			{
-				"label": _("Customer Name"),
-				"fieldname": "party_name",
-				"fieldtype": "Data",
-				"width": 150,
-			},
-		)
+		if party_index is not None:
+			columns.insert(
+				party_index + 1,
+				{
+					"label": _("Customer Name"),
+					"fieldname": "party_name",
+					"fieldtype": "Data",
+					"width": 150,
+				},
+			)
 
 	# --------------------------------------------------
 	# PREPARE LOOKUP MAPS
@@ -298,7 +453,137 @@ def execute(filters=None):
 		else:
 			row.pop("remarks", None)
 
+	# --------------------------------------------------
+	# CUSTOMER HEADER DETAILS FOR PRINT
+	# Attached to the first row; the print format reads them from there
+	# --------------------------------------------------
+	if data and filters.get("party") and len(filters.party) == 1:
+		details = get_customer_details(filters.party[0])
+		data[0].update(
+			{
+				"cust_name": details.get("customer_name", ""),
+				"cust_name_ar": details.get("customer_name_ar", ""),
+				"cust_tax_id": details.get("tax_id", ""),
+				"cust_address_en": details.get("address_en", ""),
+				"cust_address_ar": details.get("address_ar", ""),
+			}
+		)
+
 	return columns, data, None, get_report_summary(filters)
+
+
+# --------------------------------------------------
+# CUSTOMER DETAILS FOR PRINT HEADER
+# --------------------------------------------------
+def get_customer_details(customer):
+	if not customer or not frappe.db.exists("Customer", customer):
+		return {}
+
+	cust = frappe.get_doc("Customer", customer)
+
+	details = {
+		"customer_name": cust.customer_name or cust.name,
+		"customer_name_ar": (
+			cust.get("custom_customer_name_in_arabic")
+			or cust.get("zatca_customer_name_in_arabic")
+			or ""
+		),
+		"tax_id": cust.tax_id or "",
+		"address_en": "",
+		"address_ar": "",
+	}
+
+	# Address is optional: skip it silently if missing / deleted / unreadable
+	try:
+		address_name = cust.get("customer_primary_address")
+		if not address_name or not frappe.db.exists("Address", address_name):
+			address_name = get_default_address("Customer", cust.name)
+
+		if address_name and frappe.db.exists("Address", address_name):
+			addr = frappe.get_doc("Address", address_name)
+			details["address_en"] = get_address_en(addr)
+			details["address_ar"] = get_address_ar(addr)
+	except Exception:
+		frappe.log_error(title="Customer Statement: address lookup failed")
+
+	return details
+
+
+def _building_no(a):
+	return a.get("custom_building_number") or a.get("building_number") or ""
+
+
+def get_address_en(a):
+	if not a:
+		return ""
+
+	building_no = _building_no(a)
+	lines = []
+
+	if a.get("address_line1"):
+		lines.append(escape_html(a.address_line1))
+	if a.get("address_line2"):
+		lines.append(escape_html(a.address_line2))
+
+	if building_no or a.get("city") or a.get("pincode"):
+		city_line = ""
+		if building_no:
+			city_line += f"Building No. {escape_html(building_no)}, "
+		city_line += escape_html(a.get("city") or "")
+		if a.get("pincode"):
+			city_line += f" {escape_html(a.pincode)}"
+		lines.append(city_line.strip().rstrip(","))
+
+	if a.get("country"):
+		lines.append(escape_html(a.country))
+
+	return "<br>".join(lines)
+
+
+def get_address_ar(a):
+	"""Arabic fields fall back to English."""
+	if not a:
+		return ""
+
+	building_no = _building_no(a)
+	line1 = (
+		a.get("custom_address_line_1_in_arabic")
+		or a.get("address_line_1_in_arabic")
+		or a.get("address_line1")
+		or ""
+	)
+	line2 = (
+		a.get("custom_address_line_2_in_arabic")
+		or a.get("address_line_2_in_arabic")
+		or a.get("address_line2")
+		or ""
+	)
+	city = a.get("custom_city_in_arabic") or a.get("city_in_arabic") or a.get("city") or ""
+	country = (
+		"المملكة العربية السعودية"
+		if a.get("country") == "Saudi Arabia"
+		else (a.get("country") or "")
+	)
+
+	lines = []
+	if line1:
+		lines.append(escape_html(line1))
+	if line2:
+		lines.append(escape_html(line2))
+
+	if building_no or city or a.get("pincode"):
+		city_line = ""
+		if building_no:
+			city_line += f'رقم المبنى <span class="num">{escape_html(building_no)}</span>، '
+		city_line += escape_html(city)
+		if a.get("pincode"):
+			city_line += f' <span class="num">{escape_html(a.pincode)}</span>'
+		lines.append(city_line.strip().rstrip("،"))
+
+	if country:
+		lines.append(escape_html(country))
+
+	return "<br>".join(lines)
 
 
 # --------------------------------------------------
@@ -316,8 +601,8 @@ def get_report_summary(filters):
 		)
 
 		if customer:
-			customer_name = customer.customer_name
-			tax_id = customer.tax_id
+			customer_name = customer.customer_name or ""
+			tax_id = customer.tax_id or ""
 
 	heading = "<h2 style='text-align:center;'>Statement of Account</h2>"
 	subheading = f"""
@@ -350,11 +635,8 @@ def get_customer_map():
 # SALES INVOICE PO MAP
 # --------------------------------------------------
 def get_sales_invoice_po_map(data):
-
 	vouchers = [
-		d.get("voucher_no")
-		for d in data
-		if d.get("voucher_type") == "Sales Invoice"
+		d.get("voucher_no") for d in data if d.get("voucher_type") == "Sales Invoice"
 	]
 
 	if not vouchers:
@@ -369,15 +651,12 @@ def get_sales_invoice_po_map(data):
 	return {inv.name: inv for inv in invoices}
 
 
-# ------------------------------------------------  --
+# --------------------------------------------------
 # PAYMENT ENTRY REFERENCE MAP
 # --------------------------------------------------
 def get_payment_entry_reference_map(data):
-
 	vouchers = [
-		d.get("voucher_no")
-		for d in data
-		if d.get("voucher_type") == "Payment Entry"
+		d.get("voucher_no") for d in data if d.get("voucher_type") == "Payment Entry"
 	]
 
 	if not vouchers:

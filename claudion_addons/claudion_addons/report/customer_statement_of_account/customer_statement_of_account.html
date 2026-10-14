@@ -1,4 +1,4 @@
-<!-- Modified on 25-11-2024 -->
+<!-- Modified on 08-10-2026 : bilingual customer name / address / VAT header -->
 
 <style>
 
@@ -13,6 +13,40 @@ html {
 
 .title-letter-spacing {
     letter-spacing: .2rem;
+}
+
+/* ---------- Customer header (English left / Arabic right) ---------- */
+.customer-details {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.35;
+    margin: 6px 0 10px 0;
+}
+.customer-details td {
+    border: none !important;
+    padding: 0 !important;
+    vertical-align: top;
+    width: 50%;
+}
+.customer-details p {
+    margin: 0 0 2px 0;
+}
+.customer-details .field-label {
+    font-weight: bold;
+}
+.customer-details .customer-en {
+    text-align: left;
+    direction: ltr;
+}
+.customer-details .customer-ar {
+    text-align: right;
+    direction: rtl;
+}
+.customer-details .ltr-value,
+.customer-details .num {
+    direction: ltr;
+    unicode-bidi: embed;
 }
 
 @media print {
@@ -41,6 +75,11 @@ html {
         border: 1px solid black;
     }
 
+    .customer-details td {
+        border: none !important;
+        padding: 0 !important;
+    }
+
     .no-print {
         display: none !important;
     }
@@ -52,7 +91,7 @@ html {
 
 <div style="font-family:Arial">
 
-{% 
+{%
 var show_po_column = false;
 
 if(!filters.party){
@@ -65,52 +104,108 @@ if(!filters.party){
         }
     }
 }
+
+var single_customer = filters.party && (!Array.isArray(filters.party) || filters.party.length == 1);
+
+/* Customer header details are attached by the .py to the first row */
+var cust = {};
+var all_rows = (typeof original_data !== "undefined" && original_data && original_data.length) ? original_data : data;
+for (var c = 0; c < all_rows.length; c++) {
+    if (all_rows[c] && all_rows[c].cust_name !== undefined) { cust = all_rows[c]; break; }
+}
+
+var cust_name = cust.cust_name || filters.party_name || (Array.isArray(filters.party) ? filters.party[0] : filters.party) || "";
+var cust_tax_id = cust.cust_tax_id || filters.tax_id || "";
+var cust_name_ar = cust.cust_name_ar || filters.party_name_ar || "";
+var cust_address_en = cust.cust_address_en || filters.address_en || "";
+var cust_address_ar = cust.cust_address_ar || filters.address_ar || "";
 %}
 
 <div>
 
 <div style="text-align:center; font-size:15px; line-height:1.4; letter-spacing:0;">
+    <div style="font-weight:bold; font-size:18px; margin-bottom:4px;">
+        {%= __("STATEMENT OF ACCOUNTS") %}
+    </div>
 
-<div style="font-weight:bold; font-size:18px; margin-bottom:4px;">
-{%= __("STATEMENT OF ACCOUNTS") %}
-</div>
-
-{% if (filters.party_name) { %}
-
-{%= filters.party_name %}<br>
-
-{% if (filters.tax_id) { %}
-<span style="font-weight:bold;">{%= __("Tax ID: ") %}{%= filters.tax_id %}</span><br>
-{% } %}
-
-{% } else if (filters.party && filters.party.length) { %}
-
-{%= filters.party %}<br>
-
-{% if (filters.tax_id) { %}
-<span style="font-weight:bold;">{%= __("Tax ID: ") %}{%= filters.tax_id %}</span><br>
-{% } %}
-
-{% } else { %}
-
-{%= __("All Customers ") %}<br>
-
-{% } %}
-
+    {% if (!single_customer) { %}
+        {%= __("All Customers ") %}<br>
+    {% } %}
 </div>
 
 <div style="text-align:center; font-size:13px;">
-<b>
-
-{%= __("{0} to {1}", [
-frappe.datetime.str_to_user(filters.from_date),
-frappe.datetime.str_to_user(filters.to_date)
-]) %}
-
-<br><br>
-
-</b>
+    <b>
+    {%= __("{0} to {1}", [
+        frappe.datetime.str_to_user(filters.from_date),
+        frappe.datetime.str_to_user(filters.to_date)
+    ]) %}
+    </b>
 </div>
+
+
+{% if (single_customer) { %}
+
+<table class="customer-details">
+    <tr>
+
+        <!-- CUSTOMER — ENGLISH (LEFT) -->
+        <td class="customer-en">
+
+            <p>
+                <span class="field-label">Client / Company:</span>
+                {%= cust_name %}
+            </p>
+
+            {% if (cust_address_en) { %}
+            <p>
+                <span class="field-label">Address:</span>
+                {%= cust_address_en %}
+            </p>
+            {% } %}
+
+            {% if (cust_tax_id) { %}
+            <p>
+                <span class="field-label">VAT. No.:</span>
+                {%= cust_tax_id %}
+            </p>
+            {% } %}
+
+        </td>
+
+        <!-- CUSTOMER — ARABIC (RIGHT) -->
+        <td class="customer-ar">
+
+            <p>
+                <span class="field-label">العميل / الشركة:</span>
+                {% if (cust_name_ar) { %}
+                    {%= cust_name_ar %}
+                {% } else { %}
+                    <span class="ltr-value">{%= cust_name %}</span>
+                {% } %}
+            </p>
+
+            {% if (cust_address_ar) { %}
+            <p>
+                <span class="field-label">العنوان:</span>
+                {%= cust_address_ar %}
+            </p>
+            {% } %}
+
+            {% if (cust_tax_id) { %}
+            <p>
+                <span class="field-label">الرقم الضريبي:</span>
+                <span class="ltr-value">{%= cust_tax_id %}</span>
+            </p>
+            {% } %}
+
+        </td>
+
+    </tr>
+</table>
+
+{% } else { %}
+<br>
+{% } %}
 
 </div>
 
@@ -335,7 +430,7 @@ frappe.datetime.str_to_user(filters.to_date)
 
 </tr>
 
-{% endfor %}
+{% } %}
 
 </tbody>
 
