@@ -5,6 +5,16 @@ app_description = "General addons for Claudion.com clients"
 app_email = "support@ERPGulf.com"
 app_license = "mit"
 
+# Quotation: Cost Center, Project and Sales Team (see custom_fields.py)
+after_install = "claudion_addons.custom_fields.setup_custom_fields"
+after_migrate = "claudion_addons.custom_fields.setup_custom_fields"
+
+doc_events = {
+    "Quotation": {
+        "validate": "claudion_addons.overrides.quotation.set_sales_contributions",
+    },
+}
+
 # Apps
 # ------------------
 
