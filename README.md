@@ -93,10 +93,11 @@ A starting workflow, *Supplier Payment Request Approval*, is created once when t
 The button appears on an approved request while any row has no payment entry yet. It is shown to users who are allowed to create Payment Entries.
 
 - A dialog lists the rows. Untick the ones to leave for later; the posting date and the paid-from account can be changed for this run.
+- Each row has its own **Reference No** and **Reference Date** in the dialog, for that supplier's cheque or transfer. Enter them there and the draft is created with them, so the drafts need not be opened one by one. They can also be entered on the supplier row itself, before or after approval.
 - One **draft** Payment Entry is created per ticked row. Nothing is submitted: the user reviews and submits each entry in the usual Payment Entry form.
 - Invoice outstanding amounts are checked again at this moment, because they may have changed since approval.
 - A row that fails is reported with the reason and does not stop the others. A row that already has an entry is never created twice.
-- Where the request has no reference number, the request number is put on the draft as its reference, because ERPNext does not save a bank payment without one. Replace it with the real cheque or transfer reference before submitting.
+- A row with no reference of its own takes the request's Reference No. Where there is none at all, the request number is put on the draft, because ERPNext does not save a bank payment without a reference. Replace it with the real one before submitting.
 
 **Each row shows where it stands**
 

@@ -117,7 +117,7 @@ function spr_fetch_supplier(frm, cdt, cdn) {
 }
 
 // ------------------------------------------------------------------
-// Create Payment Entries: review, choose rows, confirm
+// Create Payment Entries: review, choose rows, enter references, confirm
 // ------------------------------------------------------------------
 function spr_open_dialog(frm) {
 	const currency = frm.doc.currency;
@@ -126,22 +126,33 @@ function spr_open_dialog(frm) {
 
 	(frm.doc.items || []).forEach((row) => {
 		const invoices = (frm.doc.invoices || []).filter((inv) => inv.supplier === row.supplier);
-		let text = `${row.supplier_name || row.supplier} · ${format_currency(row.amount, currency)} · ${__(
-			row.allocation_type
-		)}`;
+		let allocation = __(row.allocation_type);
 		if (row.allocation_type === SPR_AGAINST_INVOICES) {
-			text += ` (${invoices.map((inv) => inv.purchase_invoice).join(", ")})`;
+			allocation += ` (${invoices.map((inv) => inv.purchase_invoice).join(", ")})`;
 		}
 		if (row.payment_entry) {
+			const text = `${row.supplier_name || row.supplier} · ${format_currency(
+				row.amount,
+				currency
+			)} · ${allocation}`;
 			done.push(`${frappe.utils.escape_html(text)} · ${row.payment_entry} · ${__(row.entry_status)}`);
 		} else {
-			pending.push({ label: text, value: row.name, checked: 1 });
+			pending.push({
+				// ticked to start with, using the table's own row boxes
+				__checked: 1,
+				row_name: row.name,
+				supplier_name: row.supplier_name || row.supplier,
+				amount: row.amount,
+				allocation: allocation,
+				reference_no: row.reference_no || frm.doc.reference_no || "",
+				reference_date: row.reference_date || frm.doc.reference_date || null,
+			});
 		}
 	});
 
 	const dialog = new frappe.ui.Dialog({
 		title: __("Create Payment Entries"),
-		size: "large",
+		size: "extra-large",
 		fields: [
 			{
 				fieldname: "posting_date",
@@ -167,8 +178,64 @@ function spr_open_dialog(frm) {
 					},
 				}),
 			},
-			{ fieldtype: "Section Break", label: __("Rows to create") },
-			{ fieldname: "rows", fieldtype: "MultiCheck", options: pending, columns: 1 },
+			{
+				fieldtype: "Section Break",
+				label: __("Rows to create"),
+				description: __(
+					"Untick a row to leave it for later. Enter each supplier's cheque or transfer number and date here, and the draft is created with them."
+				),
+			},
+			{
+				fieldname: "rows",
+				fieldtype: "Table",
+				cannot_add_rows: true,
+				cannot_delete_rows: true,
+				in_place_edit: true,
+				data: pending,
+				get_data: () => pending,
+				fields: [
+					{
+						fieldname: "supplier_name",
+						fieldtype: "Data",
+						label: __("Supplier"),
+						read_only: 1,
+						in_list_view: 1,
+						columns: 4,
+					},
+					{
+						fieldname: "amount",
+						fieldtype: "Currency",
+						label: __("Amount"),
+						options: currency,
+						read_only: 1,
+						in_list_view: 1,
+						columns: 2,
+					},
+					{
+						fieldname: "allocation",
+						fieldtype: "Data",
+						label: __("Allocation"),
+						read_only: 1,
+						in_list_view: 1,
+						columns: 2,
+					},
+					{
+						fieldname: "reference_no",
+						fieldtype: "Data",
+						label: __("Reference No"),
+						in_list_view: 1,
+						columns: 2,
+					},
+					{
+						fieldname: "reference_date",
+						fieldtype: "Date",
+						label: __("Reference Date"),
+						in_list_view: 1,
+						columns: 2,
+					},
+					{ fieldname: "row_name", fieldtype: "Data", hidden: 1 },
+				],
+			},
 			{
 				fieldtype: "Section Break",
 				label: __("Already created"),
@@ -189,7 +256,13 @@ function spr_open_dialog(frm) {
 		],
 		primary_action_label: __("Create Drafts"),
 		primary_action(values) {
-			const rows = values.rows || [];
+			const rows = pending
+				.filter((row) => cint(row.__checked))
+				.map((row) => ({
+					name: row.row_name,
+					reference_no: row.reference_no || "",
+					reference_date: row.reference_date || null,
+				}));
 			if (!rows.length) {
 				frappe.msgprint(__("Select at least one row."));
 				return;
