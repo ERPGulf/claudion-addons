@@ -5,13 +5,31 @@ app_description = "General addons for Claudion.com clients"
 app_email = "support@ERPGulf.com"
 app_license = "mit"
 
-# Quotation: Cost Center, Project and Sales Team (see custom_fields.py)
-after_install = "claudion_addons.custom_fields.setup_custom_fields"
-after_migrate = "claudion_addons.custom_fields.setup_custom_fields"
+# Every feature lives in its own folder under claudion_addons/ and is wired in here.
+#
+#   quotation_fields/             Cost Center, Project and Sales Team on Quotation
+#   purchase_invoice_date_check/  Purchase invoice date check: block or warn
+#   supplier_payment_request/     Supplier Payment Request
+#   claudion_addons/              Claudion Add-on Settings, Customer Statement of Account
+
+after_install = [
+    "claudion_addons.quotation_fields.custom_fields.setup_custom_fields",
+    "claudion_addons.supplier_payment_request.setup.after_install",
+]
+after_migrate = [
+    "claudion_addons.quotation_fields.custom_fields.setup_custom_fields",
+    "claudion_addons.supplier_payment_request.setup.setup_custom_fields",
+]
 
 doc_events = {
     "Quotation": {
-        "validate": "claudion_addons.overrides.quotation.set_sales_contributions",
+        "validate": "claudion_addons.quotation_fields.quotation.set_sales_contributions",
+    },
+    # Keeps each Supplier Payment Request row in step with its Payment Entry.
+    "Payment Entry": {
+        "on_submit": "claudion_addons.supplier_payment_request.payment_entries.on_payment_entry_submit",
+        "on_cancel": "claudion_addons.supplier_payment_request.payment_entries.on_payment_entry_cancel",
+        "on_trash": "claudion_addons.supplier_payment_request.payment_entries.on_payment_entry_trash",
     },
 }
 
@@ -257,6 +275,6 @@ doc_events = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 override_doctype_class = {
-    "Purchase Invoice": "claudion_addons.overrides.purchase_invoice.CustomPurchaseInvoice",
+    "Purchase Invoice": "claudion_addons.purchase_invoice_date_check.purchase_invoice.CustomPurchaseInvoice",
 }
 
