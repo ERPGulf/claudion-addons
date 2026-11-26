@@ -7,7 +7,7 @@ the user in the standard Payment Entry form, under standard permissions.
 
 import frappe
 from frappe import _
-from frappe.utils import flt, get_link_to_form, getdate, today
+from frappe.utils import cstr, flt, getdate, today
 
 from claudion_addons.supplier_payment_request.doctype.supplier_payment_request.supplier_payment_request import (
 	AGAINST_INVOICES,
@@ -26,11 +26,18 @@ ITEM = "Supplier Payment Request Item"
 def create_payment_entries(request, rows, posting_date=None, paid_from_account=None):
 	"""Create one draft Payment Entry for each chosen row of an approved request.
 
-	rows: names of the item rows to process. A row that already has a Payment Entry is
-	skipped, so running this twice never pays a row twice. A row that fails is reported and
-	does not stop the others.
+	rows: the item rows to process. Each is either a row name, or a dict with the row's
+	"name" and, optionally, the "reference_no" and "reference_date" of that supplier's cheque
+	or transfer. A row that already has a Payment Entry is skipped, so running this twice
+	never pays a row twice. A row that fails is reported and does not stop the others.
 	"""
-	rows = frappe.parse_json(rows) or []
+	references = {}
+	for entry in frappe.parse_json(rows) or []:
+		if isinstance(entry, dict):
+			references[entry.get("name")] = entry
+		else:
+			references[entry] = {}
+	rows = references
 	if not rows:
 		frappe.throw(_("Select at least one row."))
 
@@ -61,6 +68,7 @@ def create_payment_entries(request, rows, posting_date=None, paid_from_account=N
 
 		frappe.db.savepoint("spr_row")
 		try:
+			set_row_reference(row, rows[row.name])
 			pe = build_payment_entry(doc, row, posting_date)
 			pe.insert()
 			row.db_set({"payment_entry": pe.name, "entry_status": DRAFT_CREATED})
@@ -76,6 +84,17 @@ def create_payment_entries(request, rows, posting_date=None, paid_from_account=N
 		doc.db_set("payment_entries_created", 1)
 
 	return {"created": created, "failed": failed, "skipped": skipped}
+
+
+def set_row_reference(row, given):
+	"""Keep the cheque or transfer reference entered for this row when the entries are created."""
+	values = {}
+	if given.get("reference_no"):
+		values["reference_no"] = cstr(given.get("reference_no")).strip()
+	if given.get("reference_date"):
+		values["reference_date"] = getdate(given.get("reference_date"))
+	if values:
+		row.db_set(values)
 
 
 def build_payment_entry(doc, row, posting_date):
@@ -94,11 +113,12 @@ def build_payment_entry(doc, row, posting_date):
 	pe.target_exchange_rate = 1
 	pe.mode_of_payment = doc.mode_of_payment
 
-	# ERPNext will not save a payment from a bank account without a reference, even as a
-	# draft. Where the request gives none, the request number stands in until the user
-	# enters the real cheque or transfer reference on the draft.
-	pe.reference_no = doc.reference_no or doc.name
-	pe.reference_date = doc.reference_date or posting_date
+	# The row's own cheque or transfer reference comes first, then the one given for the
+	# whole request. ERPNext will not save a payment from a bank account without a
+	# reference, even as a draft, so where neither is given the request number stands in
+	# until the user enters the real one on the draft.
+	pe.reference_no = row.reference_no or doc.reference_no or doc.name
+	pe.reference_date = row.reference_date or doc.reference_date or posting_date
 
 	remarks = row.remarks or doc.remarks
 	if remarks:

@@ -14,6 +14,8 @@
   "allocation_type",
   "remarks",
   "section_break_entry",
+  "reference_no",
+  "reference_date",
   "payment_entry",
   "column_break_entry",
   "entry_status"
@@ -86,6 +88,21 @@
    "label": "Payment Entry"
   },
   {
+   "allow_on_submit": 1,
+   "description": "Cheque or transfer number for this supplier. Can be filled in after approval, until the payment entry is created.",
+   "fieldname": "reference_no",
+   "fieldtype": "Data",
+   "label": "Reference No",
+   "no_copy": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "reference_date",
+   "fieldtype": "Date",
+   "label": "Reference Date",
+   "no_copy": 1
+  },
+  {
    "fieldname": "payment_entry",
    "fieldtype": "Link",
    "label": "Payment Entry",
@@ -111,7 +128,7 @@
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-11-26 12:00:00.000000",
+ "modified": "2026-11-26 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Supplier Payment Request",
  "name": "Supplier Payment Request Item",
