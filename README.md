@@ -19,8 +19,8 @@ A statement of one customer's account, or of all customers, for any period. It i
 **What it shows beyond the General Ledger**
 
 - **Customer Name** beside the customer code.
-- **The customer's order number and date** on each sales invoice line, taken from the invoice.
-- **The payment reference and its date** on each payment line, taken from the payment entry.
+- **The customer's order number and date** for each sales invoice, taken from the invoice. Shown on the printout, in the Remarks column.
+- **The payment reference and its date** for each payment, taken from the payment entry. Shown on the printout, in the Remarks column.
 - **A heading** above the table with the customer's name, tax ID and the period.
 
 **Filters**
@@ -36,8 +36,8 @@ A statement of one customer's account, or of all customers, for any period. It i
 
 Printing the report for a single customer gives a statement ready to send:
 
-- The customer's details in **English and Arabic side by side**: name, address and VAT number. The Arabic name and address come from the customer's record; where there is no Arabic name, the English one is used.
-- Columns for Date, Particulars, Debit, Credit and running Balance, with Remarks when *Show Remarks* is ticked.
+- The customer's details in **English and Arabic side by side**: name, address and VAT number. The Arabic name and address come from the customer's record; where there is no Arabic name or address, the English one is used. The Arabic fields themselves are not created by this app.
+- Columns for Date, Particulars, Debit, Credit and running Balance. A Remarks column is added when any invoice in the period has a customer order number, when *Show Remarks* is ticked, or when the statement is for all customers.
 
 **Who can run it:** Accounts User, Accounts Manager and Auditor.
 
